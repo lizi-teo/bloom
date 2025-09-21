@@ -62,3 +62,7 @@ A Flutter application for session feedback and sentiment analysis.
 ### Development
 
 The app uses Flutter web and can be run in Chrome for development. Configuration files contain environment-specific settings and should not be committed to version control.
+
+### Files not stored in Github
+1. .config/*
+2. .mcp.json
