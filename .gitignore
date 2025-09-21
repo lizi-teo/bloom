@@ -57,3 +57,5 @@ app.*.map.json
 .config/
 # Allow template config files
 !.config/*.template.json
+
+.mcp.json

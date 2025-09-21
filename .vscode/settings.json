@@ -2,7 +2,7 @@
   "window.density.editorTabHeight": "default",
   "debug.toolBarLocation": "docked",
   "files.exclude": {
-    ".gitignore": true,
+    // ".gitignore": true,
     ".claude": true,
     // "pubspec.yaml": true,
     ".mcp.json": true,
