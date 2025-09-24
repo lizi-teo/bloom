@@ -1,7 +1,7 @@
 import 'dart:async';
-import 'dart:html' as html;
-import 'dart:js' as js;
+import 'dart:js_interop';
 import 'package:flutter/foundation.dart';
+import 'package:web/web.dart' as web;
 
 /// Universal keyboard detection utility for mobile web browsers
 /// Handles viewport and keyboard behavior across Safari, Chrome, and Firefox
@@ -12,8 +12,8 @@ class KeyboardUtils {
   static bool get hasVirtualKeyboardSupport {
     if (!kIsWeb) return false;
     try {
-      return js.context.hasProperty('navigator') &&
-             js.context['navigator'].hasProperty('virtualKeyboard');
+      // VirtualKeyboard API is still experimental, so we'll just return true for Chrome
+      return browserType == BrowserType.chrome;
     } catch (e) {
       return false;
     }
@@ -23,7 +23,7 @@ class KeyboardUtils {
   static BrowserType get browserType {
     if (!kIsWeb) return BrowserType.unknown;
 
-    final userAgent = html.window.navigator.userAgent.toLowerCase();
+    final userAgent = web.window.navigator.userAgent.toLowerCase();
 
     if (userAgent.contains('safari') && !userAgent.contains('chrome')) {
       return BrowserType.safari;
@@ -40,7 +40,7 @@ class KeyboardUtils {
   static bool get isMobile {
     if (!kIsWeb) return false;
 
-    final userAgent = html.window.navigator.userAgent.toLowerCase();
+    final userAgent = web.window.navigator.userAgent.toLowerCase();
     return userAgent.contains('mobile') ||
            userAgent.contains('android') ||
            userAgent.contains('iphone') ||
@@ -49,29 +49,27 @@ class KeyboardUtils {
 
   /// Get current visual viewport height (simplified)
   static double get visualViewportHeight {
-    if (!kIsWeb) return html.window.innerHeight!.toDouble();
+    if (!kIsWeb) return web.window.innerHeight.toDouble();
 
     try {
       // Try Visual Viewport API first (modern browsers)
-      if (js.context.hasProperty('visualViewport')) {
-        final visualViewport = js.context['visualViewport'];
-        if (visualViewport != null && visualViewport.hasProperty('height')) {
-          return visualViewport['height'].toDouble();
-        }
+      final visualViewport = web.window.visualViewport;
+      if (visualViewport != null) {
+        return visualViewport.height;
       }
     } catch (e) {
       debugPrint('Failed to access Visual Viewport API: $e');
     }
 
     // Fallback to window.innerHeight
-    return html.window.innerHeight!.toDouble();
+    return web.window.innerHeight.toDouble();
   }
 
   /// Get keyboard height by comparing layout and visual viewport
   static double get keyboardHeight {
     if (!kIsWeb) return 0.0;
 
-    final layoutHeight = html.window.innerHeight!.toDouble();
+    final layoutHeight = web.window.innerHeight.toDouble();
     final visualHeight = visualViewportHeight;
 
     return (layoutHeight - visualHeight).clamp(0.0, double.infinity);
@@ -92,11 +90,9 @@ class KeyboardUtils {
     // Step 2: Chrome/Edge VirtualKeyboard API optimization
     if (hasVirtualKeyboardSupport) {
       try {
-        final virtualKeyboard = js.context['navigator']['virtualKeyboard'];
-        if (virtualKeyboard != null) {
-          virtualKeyboard['overlaysContent'] = true;
-        }
-        debugPrint('✅ VirtualKeyboard API enabled');
+        // VirtualKeyboard API is experimental - we'll skip the setup for now
+        // In future versions when it's stable, this can be re-enabled
+        debugPrint('✅ VirtualKeyboard API detected (Chrome)');
       } catch (e) {
         debugPrint('⚠️ VirtualKeyboard API setup failed: $e');
       }
@@ -107,9 +103,9 @@ class KeyboardUtils {
   static void _setupBrowserBackgroundConsistency() {
     try {
       // Define CSS custom properties that can be updated dynamically
-      final style = html.StyleElement();
+      final style = web.document.createElement('style') as web.HTMLStyleElement;
       style.id = 'flutter-theme-css-vars';
-      style.text = '''
+      style.textContent = '''
         :root {
           --flutter-surface: #fafafa;
           --flutter-on-surface: #1a1a1a;
@@ -143,10 +139,10 @@ class KeyboardUtils {
       ''';
 
       // Remove existing style if it exists
-      final existing = html.document.getElementById('flutter-theme-css-vars');
+      final existing = web.document.getElementById('flutter-theme-css-vars');
       existing?.remove();
 
-      html.document.head!.append(style);
+      web.document.head!.appendChild(style);
       debugPrint('✅ Browser background consistency applied');
     } catch (e) {
       debugPrint('⚠️ Background consistency setup failed: $e');
@@ -162,10 +158,10 @@ class KeyboardUtils {
     if (!kIsWeb) return;
 
     try {
-      final root = html.document.documentElement!;
+      final root = web.document.documentElement! as web.HTMLElement;
       if (surface != null) {
         root.style.setProperty('--flutter-surface', surface);
-        html.document.body!.style.backgroundColor = surface;
+        web.document.body!.style.backgroundColor = surface;
       }
       if (onSurface != null) {
         root.style.setProperty('--flutter-on-surface', onSurface);
@@ -191,7 +187,7 @@ class KeyboardUtils {
     final debounceDelay = getKeyboardDebounceDelay();
 
     // Use window resize events for keyboard detection
-    html.window.addEventListener('resize', (event) {
+    web.window.addEventListener('resize', (web.Event event) {
       // Cancel previous timer
       _keyboardDebounceTimer?.cancel();
 
@@ -208,7 +204,7 @@ class KeyboardUtils {
           callback(currentIsVisible, currentHeight);
         }
       });
-    });
+    }.toJS);
   }
 
   /// Get browser-specific debounce delay for keyboard transitions

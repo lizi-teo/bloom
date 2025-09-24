@@ -30,13 +30,47 @@
   <!-- Favicon -->
   <link rel="icon" type="image/png" href="favicon.png"/>
 
-  <title>bloom_app</title>
+  <title>bloom</title>
   <link rel="manifest" href="manifest.json">
 
   <!-- Mobile-specific CSS fixes -->
   <link rel="stylesheet" href="mobile-fixes.css">
+
+  <style>
+    /* CRITICAL: Prevent white flash on keyboard open - matches app dark theme */
+    html, body {
+      margin: 0;
+      padding: 0;
+      background-color: #141218 !important; /* Match your app's dark theme */
+      height: 100%;
+      overflow: hidden;
+    }
+
+    /* Ensure Flutter view container has dark background */
+    #flutter_app,
+    flt-glass-pane,
+    flutter-view,
+    flutter-app,
+    [flt-renderer] {
+      background-color: #141218 !important; /* Match your app's dark theme */
+    }
+
+    /* Loading indicator styling */
+    .loading {
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      height: 100vh;
+      background-color: #141218; /* Match your app's dark theme */
+      color: #E6E0E9; /* Match your app's light text color */
+      font-family: 'Roboto', sans-serif;
+    }
+  </style>
 </head>
 <body>
+  <div id="loading" class="loading">
+    <div>Loading...</div>
+  </div>
   <script src="flutter_bootstrap.js" async></script>
 </body>
 </html>

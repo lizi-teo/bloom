@@ -19,6 +19,10 @@ html, body {
   overflow-x: hidden;
   -webkit-overflow-scrolling: touch;
   position: relative;
+  /* CRITICAL: Prevent white flash on keyboard open - matches app dark theme */
+  background-color: #141218 !important;
+  margin: 0;
+  padding: 0;
 }
 
 /* Prevent horizontal scrolling */
@@ -88,4 +92,19 @@ button, input, select, textarea {
 /* Android keyboard fix */
 .keyboard-fix {
   padding-bottom: env(keyboard-inset-height, 0px);
+}
+
+/* Flutter-specific container fixes to prevent white flash */
+#flutter_app,
+flt-glass-pane,
+flutter-view,
+flutter-app,
+[flt-renderer],
+flt-semantics-host {
+  background-color: #141218 !important;
+}
+
+/* Prevent white background during theme transitions */
+.flutter-view {
+  background-color: #141218 !important;
 }

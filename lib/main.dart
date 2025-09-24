@@ -33,7 +33,11 @@ void main() async {
         ChangeNotifierProvider(create: (context) => ThemeProvider()),
         ChangeNotifierProvider(create: (context) => NavigationProvider()),
       ],
-      child: const MyApp(),
+      child: Container(
+        // Root container with solid dark background to prevent white flash
+        color: const Color(0xFF141218), // Matches dark theme background
+        child: const MyApp(),
+      ),
     ),
   );
 }

@@ -1,10 +1,11 @@
 import 'package:flutter/material.dart';
 import '../../utils/responsive_utils.dart';
 import '../../themes/spacing_theme.dart';
+import '../../services/image_cache_service.dart';
 
-/// A simple fixed header component for mobile-first responsive design
-/// Replaces complex SliverAppBar with sustainable implementation
-/// Uses fixed heights for consistent mobile browser behavior
+/// Material Design 3 compliant responsive header component
+/// Follows theme-based spacing and proper responsive patterns
+/// Uses standardized padding and heights for consistent UX
 class CollapsingHeader extends StatelessWidget {
   final String title;
   final String? imageUrl;
@@ -21,21 +22,34 @@ class CollapsingHeader extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context);
     final screenSize = getScreenSize(context);
-    final headerHeight = _getHeaderHeight(screenSize, context);
 
     return Container(
-      height: headerHeight,
+      width: double.infinity,
       decoration: BoxDecoration(
-        color: backgroundColor ?? Theme.of(context).colorScheme.surfaceContainer,
+        color: backgroundColor ?? theme.colorScheme.surfaceContainer,
       ),
       child: SafeArea(
         child: Padding(
           padding: EdgeInsets.symmetric(
-            horizontal: _getHeaderHorizontalPadding(screenSize, context),
-            vertical: _getHeaderVerticalPadding(screenSize, context),
+            vertical: _getVerticalPadding(screenSize, context),
           ),
-          child: _buildHeaderContent(screenSize, Theme.of(context), context),
+          child: _buildResponsiveContent(screenSize, theme, context),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildResponsiveContent(ScreenSize screenSize, ThemeData theme, BuildContext context) {
+    return Center(
+      child: ConstrainedBox(
+        constraints: BoxConstraints(
+          maxWidth: _getMaxContentWidth(screenSize),
+        ),
+        child: Padding(
+          padding: _getContentPadding(screenSize, context),
+          child: _buildHeaderContent(screenSize, theme, context),
         ),
       ),
     );
@@ -50,216 +64,187 @@ class CollapsingHeader extends StatelessWidget {
           Expanded(
             child: Text(
               title,
-              style: _getDisplayStyle(screenSize, theme).copyWith(
-                color: theme.colorScheme.onSurfaceVariant,
-                height: _getResponsiveLineHeight(screenSize), // Responsive line height
-              ),
+              style: _getResponsiveTextStyle(screenSize, theme),
               textAlign: TextAlign.left,
               maxLines: 2,
               overflow: TextOverflow.ellipsis,
-              softWrap: true,
             ),
           ),
-          SizedBox(width: context.spacing.xxl),
-          _buildHeaderIcon(screenSize),
+          SizedBox(width: context.spacing.xl),
+          _buildHeaderIcon(screenSize, context),
         ],
       );
     } else {
       // Compact/Medium layout: centered icon and text
       return Column(
         mainAxisSize: MainAxisSize.min,
-        mainAxisAlignment: MainAxisAlignment.center,
         children: [
-          _buildHeaderIcon(screenSize),
-          SizedBox(height: _getIconTextSpacing(screenSize, context)),
-          Expanded(
-            child: Center(
-              child: Text(
-                title,
-                style: _getDisplayStyle(screenSize, theme).copyWith(
-                  color: theme.colorScheme.onSurfaceVariant,
-                  height: _getResponsiveLineHeight(screenSize), // Responsive line height
-                ),
-                textAlign: TextAlign.center,
-                maxLines: 2,
-                overflow: TextOverflow.ellipsis,
-                softWrap: true,
-              ),
-            ),
+          _buildHeaderIcon(screenSize, context),
+          SizedBox(height: context.spacing.lg),
+          Text(
+            title,
+            style: _getResponsiveTextStyle(screenSize, theme),
+            textAlign: TextAlign.center,
+            maxLines: 2,
+            overflow: TextOverflow.ellipsis,
           ),
         ],
       );
     }
   }
 
-  Widget _buildHeaderIcon(ScreenSize screenSize) {
-    final iconSize = _getHeaderIconSize(screenSize);
+  Widget _buildHeaderIcon(ScreenSize screenSize, BuildContext context) {
+    final iconSize = _getResponsiveIconSize(screenSize, context);
 
     return Container(
       width: iconSize,
       height: iconSize,
       decoration: BoxDecoration(
-        color: iconBackgroundColor ?? const Color(0xFFF8E503), // Yellow from Figma
-        borderRadius: BorderRadius.circular(iconSize / 2), // Circular using Flutter theme approach
+        color: iconBackgroundColor ?? const Color(0xFFF8E503),
+        shape: BoxShape.circle,
       ),
       child: imageUrl != null
-          ? ClipRRect(
-              borderRadius: BorderRadius.circular(iconSize / 2), // Circular clip
-              child: Image.network(
-                imageUrl!,
-                width: iconSize,
-                height: iconSize,
-                fit: BoxFit.contain,
-                // Android mobile connection timeout - 10 seconds
-                loadingBuilder: (context, child, loadingProgress) {
-                  if (loadingProgress == null) return child;
-                  return Center(
-                    child: SizedBox(
-                      width: iconSize * 0.4,
-                      height: iconSize * 0.4,
-                      child: CircularProgressIndicator(
-                        strokeWidth: 2.0,
-                        color: const Color(0xFF9E8AEF), // Pink heart color to match fallback
-                        value: loadingProgress.expectedTotalBytes != null
-                            ? loadingProgress.cumulativeBytesLoaded / loadingProgress.expectedTotalBytes!
-                            : null,
-                      ),
-                    ),
-                  );
-                },
-                errorBuilder: (context, error, stackTrace) {
-                  debugPrint('Image loading failed for $imageUrl: $error');
-                  return _buildFallbackIcon(screenSize);
-                },
-                // Set explicit timeout for slow Android connections
-                frameBuilder: (context, child, frame, wasSynchronouslyLoaded) {
-                  if (wasSynchronouslyLoaded) return child;
-                  return AnimatedOpacity(
-                    opacity: frame == null ? 0 : 1,
-                    duration: const Duration(milliseconds: 300),
-                    curve: Curves.easeOut,
-                    child: child,
-                  );
-                },
+          ? ClipOval(
+              child: _HeaderIconImage(
+                imageUrl: imageUrl!,
+                iconSize: iconSize,
               ),
             )
-          : _buildFallbackIcon(screenSize),
+          : _buildFallbackIcon(iconSize, context),
     );
   }
 
-  Widget _buildFallbackIcon(ScreenSize screenSize) {
-    final iconSize = _getHeaderIconSize(screenSize);
+  Widget _buildFallbackIcon(double iconSize, BuildContext context) {
     return Icon(
       Icons.favorite,
-      size: iconSize * 0.4, // 40% of container size as per Figma
-      color: const Color(0xFF9E8AEF), // Pink heart color
+      size: iconSize * 0.4,
+      color: Theme.of(context).colorScheme.primary,
     );
   }
 
-  // Responsive header heights for cross-browser compatibility
-  double _getHeaderHeight(ScreenSize screenSize, BuildContext context) {
-    final screenHeight = MediaQuery.of(context).size.height;
-    final iconSize = _getHeaderIconSize(screenSize);
-    final verticalPadding = _getHeaderVerticalPadding(screenSize, context) * 2;
-    final iconTextSpacing = screenSize != ScreenSize.expanded ? _getIconTextSpacing(screenSize, context) : 0;
-
-    // Responsive text height calculation for Firefox compatibility
-    final textStyle = _getDisplayStyle(screenSize, Theme.of(context));
-    final baseFontSize = textStyle.fontSize ?? 24.0;
-
-    // Screen-size specific height multipliers for better Firefox text rendering
-    double textHeightMultiplier;
+  // Vertical padding only - no horizontal padding on container
+  double _getVerticalPadding(ScreenSize screenSize, BuildContext context) {
     switch (screenSize) {
       case ScreenSize.compact:
-        textHeightMultiplier = 3.2; // More space for mobile Firefox
-        break;
+        return context.spacing.lg; // 16dp
       case ScreenSize.medium:
-        textHeightMultiplier = 3.0; // Tablet spacing
-        break;
+        return context.spacing.xl; // 24dp
       case ScreenSize.expanded:
-        textHeightMultiplier = 2.8; // Desktop can be more compact
-        break;
-    }
-
-    final estimatedTextHeight = baseFontSize * 1.5 * textHeightMultiplier;
-    final baseHeight = iconSize + iconTextSpacing + estimatedTextHeight + verticalPadding;
-
-    // Responsive max height constraints
-    final maxHeightPercent = screenSize == ScreenSize.compact ? 0.35 : 0.30;
-    final maxHeight = screenHeight * maxHeightPercent;
-
-    // Responsive minimum heights
-    final minHeight = screenSize == ScreenSize.compact ? 180.0 : 160.0;
-
-    return baseHeight.clamp(minHeight, maxHeight);
-  }
-
-  // Responsive padding using ScreenSize enum pattern (organisms guide)
-  double _getHeaderHorizontalPadding(ScreenSize screenSize, BuildContext context) {
-    switch (screenSize) {
-      case ScreenSize.compact:   // < 600dp
-        return context.spacing.lg; // Mobile-first: standard content padding
-      case ScreenSize.medium:    // 600-959dp
-        return context.spacing.xl; // Tablet: section separation
-      case ScreenSize.expanded:  // >= 960dp
-        return context.spacing.xl; // Desktop: section separation
+        return context.spacing.xl; // 24dp
     }
   }
 
-  double _getHeaderVerticalPadding(ScreenSize screenSize, BuildContext context) {
-    switch (screenSize) {
-      case ScreenSize.compact:   // < 600dp
-        return context.spacing.lg; // Mobile-first: standard content padding
-      case ScreenSize.medium:    // 600-959dp
-        return context.spacing.xl; // Tablet: section separation
-      case ScreenSize.expanded:  // >= 960dp
-        return context.spacing.xl; // Desktop: section separation
-    }
-  }
-
-  double _getHeaderIconSize(ScreenSize screenSize) {
+  // Content padding within the responsive constraint
+  EdgeInsets _getContentPadding(ScreenSize screenSize, BuildContext context) {
     switch (screenSize) {
       case ScreenSize.compact:
+        return EdgeInsets.symmetric(horizontal: context.spacing.lg); // 16dp
       case ScreenSize.medium:
-        return 100.0; // 100dp compact/medium (from Figma)
+        return EdgeInsets.symmetric(horizontal: context.spacing.xl); // 24dp
       case ScreenSize.expanded:
-        return 128.0; // 128dp expanded
+        return EdgeInsets.symmetric(horizontal: context.spacing.xxl); // 32dp
     }
   }
 
-  double _getIconTextSpacing(ScreenSize screenSize, BuildContext context) {
-    switch (screenSize) {
-      case ScreenSize.compact:   // < 600dp
-        return context.spacing.md; // Mobile: small component gaps
-      case ScreenSize.medium:    // 600-959dp
-        return context.spacing.lg; // Tablet: standard content padding
-      case ScreenSize.expanded:  // >= 960dp
-        return context.spacing.xl; // Desktop: section separation
-    }
-  }
-
-  // Responsive typography using Flutter theme
-  TextStyle _getDisplayStyle(ScreenSize screenSize, ThemeData theme) {
+  // Max content width for different screen sizes
+  double _getMaxContentWidth(ScreenSize screenSize) {
     switch (screenSize) {
       case ScreenSize.compact:
-        return theme.textTheme.headlineLarge!; // Headline large for mobile
+        return double.infinity; // Full width on mobile
       case ScreenSize.medium:
-        return theme.textTheme.headlineLarge!; // Headline large for tablet
+        return 800.0; // Constrained width on tablet
       case ScreenSize.expanded:
-        return theme.textTheme.displayMedium!; // Display medium for desktop
+        return 1200.0; // Max width on desktop
     }
   }
 
-  // Responsive line height for cross-browser compatibility
-  double _getResponsiveLineHeight(ScreenSize screenSize) {
+  // Material Design 3 responsive icon sizes
+  double _getResponsiveIconSize(ScreenSize screenSize, BuildContext context) {
     switch (screenSize) {
       case ScreenSize.compact:
-        return 1.5; // More generous line height for mobile Firefox
+        return 80.0; // Reduced from 100dp for better mobile fit
       case ScreenSize.medium:
-        return 1.4; // Tablet spacing
+        return 96.0; // Medium tablet size
       case ScreenSize.expanded:
-        return 1.3; // Desktop can be more compact
+        return 112.0; // Reduced from 128dp for better proportion
     }
+  }
+
+  // Material Design 3 responsive typography
+  TextStyle _getResponsiveTextStyle(ScreenSize screenSize, ThemeData theme) {
+    switch (screenSize) {
+      case ScreenSize.compact:
+        return theme.textTheme.headlineMedium?.copyWith(
+          color: theme.colorScheme.onSurfaceVariant,
+        ) ?? const TextStyle();
+      case ScreenSize.medium:
+        return theme.textTheme.headlineLarge?.copyWith(
+          color: theme.colorScheme.onSurfaceVariant,
+        ) ?? const TextStyle();
+      case ScreenSize.expanded:
+        return theme.textTheme.displaySmall?.copyWith(
+          color: theme.colorScheme.onSurfaceVariant,
+        ) ?? const TextStyle();
+    }
+  }
+}
+
+/// Custom image widget that checks cache immediately to prevent flash
+class _HeaderIconImage extends StatelessWidget {
+  final String imageUrl;
+  final double iconSize;
+
+  const _HeaderIconImage({
+    required this.imageUrl,
+    required this.iconSize,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return FutureBuilder<CachedImage?>(
+      future: ImageCacheService().getImage(
+        imageUrl,
+        targetSize: Size(iconSize, iconSize),
+        fit: BoxFit.contain,
+      ),
+      builder: (context, snapshot) {
+        // If we have data (cached or newly loaded), show image immediately
+        if (snapshot.hasData && snapshot.data != null) {
+          return AnimatedSwitcher(
+            duration: const Duration(milliseconds: 200),
+            child: Image(
+              image: snapshot.data!.imageProvider,
+              width: iconSize,
+              height: iconSize,
+              fit: BoxFit.contain,
+              key: ValueKey(snapshot.data!.url),
+            ),
+          );
+        }
+
+        // If there's an error, show fallback
+        if (snapshot.hasError || (snapshot.connectionState == ConnectionState.done && snapshot.data == null)) {
+          return Icon(
+            Icons.favorite,
+            size: iconSize * 0.4,
+            color: Theme.of(context).colorScheme.primary,
+          );
+        }
+
+        // Only show loading indicator if actually waiting for network
+        // For cached images, this should be skipped
+        return Center(
+          child: SizedBox(
+            width: iconSize * 0.3,
+            height: iconSize * 0.3,
+            child: CircularProgressIndicator(
+              strokeWidth: 2.0,
+              color: Theme.of(context).colorScheme.primary,
+            ),
+          ),
+        );
+      },
+    );
   }
 }
 
