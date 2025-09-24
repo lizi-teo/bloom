@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+
 import 'package:supabase_flutter/supabase_flutter.dart';
 import '../../core/components/molecules/simple_results_card.dart';
 import '../../core/components/molecules/decoration_tape.dart';
@@ -20,7 +21,7 @@ class DynamicResultsPage extends StatefulWidget {
   State<DynamicResultsPage> createState() => _DynamicResultsPageState();
 }
 
-class _DynamicResultsPageState extends State<DynamicResultsPage> with TickerProviderStateMixin {
+class _DynamicResultsPageState extends State<DynamicResultsPage> {
   final _scrollController = ScrollController();
   
   bool _isLoading = true;
@@ -129,32 +130,33 @@ class _DynamicResultsPageState extends State<DynamicResultsPage> with TickerProv
             strokeWidth: 2.5,
             displacement: context.spacing.xxxl + context.spacing.sm,
             child: SafeArea(
-              child: CustomScrollView(
+              child: SingleChildScrollView(
                 controller: _scrollController,
                 physics: const AlwaysScrollableScrollPhysics(
-                  parent: BouncingScrollPhysics(),
+                  parent: ClampingScrollPhysics(),
                 ),
-                slivers: [
-              // Collapsing header as first sliver
-              CollapsingHeader(
-                title: _templateTitle ?? 'Results',
-                imageUrl: _templateImageUrl,
-                backgroundColor: Theme.of(context).colorScheme.surfaceContainer,
-                iconBackgroundColor: const Color(0xFFF8E503),
-              ),
-              // Main content
-              SliverToBoxAdapter(
+                keyboardDismissBehavior: ScrollViewKeyboardDismissBehavior.onDrag,
                 child: Column(
                   children: [
-                    // Content section with responsive breakpoints
+                    // Fixed header (no longer collapsing)
+                    CollapsingHeader(
+                      title: _templateTitle ?? 'Results',
+                      imageUrl: _templateImageUrl,
+                      backgroundColor: Theme.of(context).colorScheme.surfaceContainer,
+                      iconBackgroundColor: const Color(0xFFF8E503),
+                    ),
+                    // Main content
                     Center(
-                      child: Container(
-                        constraints: BoxConstraints(maxWidth: _getContentMaxWidth(getScreenSize(context))),
+                      child: ConstrainedBox(
+                        constraints: BoxConstraints(
+                          maxWidth: _getContentMaxWidth(getScreenSize(context)),
+                          minHeight: MediaQuery.of(context).size.height * 0.3,
+                        ),
                         child: Padding(
                           padding: EdgeInsets.only(
                             left: _getContentPadding(getScreenSize(context), context),
                             right: _getContentPadding(getScreenSize(context), context),
-                            top: context.spacing.xl, // Add top spacing to prevent overlap with collapsing header
+                            top: context.spacing.xl,
                           ),
                           child: Column(
                             children: [
@@ -178,8 +180,6 @@ class _DynamicResultsPageState extends State<DynamicResultsPage> with TickerProv
                   ],
                 ),
               ),
-            ],
-              ),
             ),
           ),
           // Positioned back button with safe area consideration (only for authenticated facilitators)
@@ -189,6 +189,8 @@ class _DynamicResultsPageState extends State<DynamicResultsPage> with TickerProv
               left: context.spacing.lg,
               child: SafeArea(
                 child: Container(
+                  width: 44,
+                  height: 44,
                   decoration: BoxDecoration(
                     color: Theme.of(context).colorScheme.surface.withValues(alpha: 0.9),
                     borderRadius: BorderRadius.circular(context.spacing.xl),
@@ -281,19 +283,23 @@ class _DynamicResultsPageState extends State<DynamicResultsPage> with TickerProv
     );
   }
 
-  // Helper methods for responsive sizing - using standardized page edge padding
+  // Helper methods for responsive sizing
+  
   double _getContentPadding(ScreenSize screenSize, BuildContext context) {
     return context.pageEdgePadding.left;
   }
 
+  // Material 3 responsive breakpoints for cross-browser consistency
   double _getContentMaxWidth(ScreenSize screenSize) {
+    // Use Material 3 standard breakpoints with fallbacks
+    
     switch (screenSize) {
       case ScreenSize.compact:
-        return double.infinity;
+        return double.infinity; // Compact: full width
       case ScreenSize.medium:
-        return 600;
+        return 600.0; // Medium: constrained for readability
       case ScreenSize.expanded:
-        return 840;
+        return 840.0; // Large: wider constraint for desktop
     }
   }
 

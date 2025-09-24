@@ -5,6 +5,7 @@ import '../../core/components/molecules/slider_card.dart';
 import '../../core/components/molecules/text_field_card.dart';
 import '../../core/services/sentiment_service.dart';
 import '../../core/utils/responsive_utils.dart';
+import '../../core/utils/keyboard_utils.dart';
 import '../../core/themes/spacing_theme.dart';
 
 // Text constants (in production, replace with proper i18n)
@@ -15,7 +16,6 @@ class _DynamicTemplateTexts {
   static const String sessionCode = 'Session code';
   static const String failedToLoadTemplate = 'Failed to load template';
   static const String checkin = 'Check-in';
-  static const String submitting = 'Submitting...';
   static const String submit = 'Submit';
   static const String errorIcon = 'Error';
   static const String submissionCompleted = 'completed successfully!';
@@ -89,6 +89,7 @@ class _DynamicTemplatePageByCodeState extends State<DynamicTemplatePageByCode> {
 
     if (_isLoading) {
       return Scaffold(
+        resizeToAvoidBottomInset: false,
         backgroundColor: Theme.of(context).colorScheme.surface,
         body: SafeArea(
           child: Center(
@@ -103,6 +104,7 @@ class _DynamicTemplatePageByCodeState extends State<DynamicTemplatePageByCode> {
 
     if (_error != null || _sessionId == null) {
       return Scaffold(
+        resizeToAvoidBottomInset: false,
         backgroundColor: Theme.of(context).colorScheme.surface,
         body: SafeArea(
           child: Center(
@@ -156,7 +158,8 @@ class DynamicTemplatePage extends StatefulWidget {
   State<DynamicTemplatePage> createState() => _DynamicTemplatePageState();
 }
 
-class _DynamicTemplatePageState extends State<DynamicTemplatePage> {
+class _DynamicTemplatePageState extends State<DynamicTemplatePage>
+    with TickerProviderStateMixin {
   final _supabase = Supabase.instance.client;
   final _scrollController = ScrollController();
 
@@ -171,6 +174,7 @@ class _DynamicTemplatePageState extends State<DynamicTemplatePage> {
   void initState() {
     super.initState();
     _loadTemplateData();
+    _setupKeyboardHandling();
   }
 
   @override
@@ -178,6 +182,34 @@ class _DynamicTemplatePageState extends State<DynamicTemplatePage> {
     _scrollController.dispose();
     super.dispose();
   }
+
+  /// Setup cross-browser keyboard handling
+  void _setupKeyboardHandling() {
+    if (!KeyboardUtils.isWeb) return;
+
+    // Setup browser background consistency and VirtualKeyboard API
+    KeyboardUtils.setupVirtualKeyboardOverlay();
+
+    // Update CSS variables to match current Flutter theme
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (mounted) {
+        final theme = Theme.of(context);
+        final colorScheme = theme.colorScheme;
+
+        // Convert Flutter colors to CSS hex values
+        final surfaceHex = '#${colorScheme.surface.toARGB32().toRadixString(16).substring(2)}';
+        final onSurfaceHex = '#${colorScheme.onSurface.toARGB32().toRadixString(16).substring(2)}';
+        final containerHex = '#${colorScheme.surfaceContainer.toARGB32().toRadixString(16).substring(2)}';
+
+        KeyboardUtils.updateThemeColors(
+          surface: surfaceHex,
+          onSurface: onSurfaceHex,
+          surfaceContainer: containerHex,
+        );
+      }
+    });
+  }
+
 
 
   Future<void> _loadTemplateData() async {
@@ -351,7 +383,8 @@ class _DynamicTemplatePageState extends State<DynamicTemplatePage> {
 
     if (_isLoading) {
       return Scaffold(
-        resizeToAvoidBottomInset: true,
+        resizeToAvoidBottomInset: false,
+        backgroundColor: theme.colorScheme.surface,
         body: SafeArea(
           child: Center(
             child: CircularProgressIndicator(
@@ -365,7 +398,8 @@ class _DynamicTemplatePageState extends State<DynamicTemplatePage> {
 
     if (_templateData == null) {
       return Scaffold(
-        resizeToAvoidBottomInset: true,
+        resizeToAvoidBottomInset: false,
+        backgroundColor: theme.colorScheme.surface,
         body: SafeArea(
           child: Center(
             child: Text(
@@ -378,16 +412,10 @@ class _DynamicTemplatePageState extends State<DynamicTemplatePage> {
     }
 
     return Scaffold(
-      resizeToAvoidBottomInset: true,
+      resizeToAvoidBottomInset: false,
       backgroundColor: colorScheme.surface,
       body: SafeArea(
-        // Ensure SafeArea handles all mobile browser UI elements
-        minimum: EdgeInsets.only(
-          bottom: MediaQuery.of(context).viewInsets.bottom,
-        ),
-        child: LayoutBuilder(
-          builder: (context, constraints) => _buildResponsiveLayout(constraints),
-        ),
+        child: _buildResponsiveLayout(MediaQuery.of(context).size),
       ),
     );
   }
@@ -433,86 +461,87 @@ class _DynamicTemplatePageState extends State<DynamicTemplatePage> {
     }
   }
 
-  Widget _buildSliverContent(BoxConstraints constraints) {
-    final screenSize = getScreenSize(context);
-    final contentPadding = _getContentPadding(screenSize);
-    final contentMaxWidth = _getContentMaxWidth(constraints.maxWidth);
-    final questionSpacing = _getQuestionSpacing(screenSize);
+  Widget _buildContent(Size screenSize) {
+    final responsiveSize = getScreenSize(context);
+    final contentPadding = _getContentPadding(responsiveSize);
+    final contentMaxWidth = _getContentMaxWidth(screenSize.width);
+    final questionSpacing = _getQuestionSpacing(responsiveSize);
 
-    return SliverToBoxAdapter(
-      child: Column(
-        children: [
-          // Content section with responsive breakpoints
-          Center(
-            child: Container(
-              constraints: BoxConstraints(maxWidth: contentMaxWidth),
-              child: Padding(
-                padding: contentPadding,
-                child: Column(
-                  children: [
-                    // Questions list
-                    ...List.generate(_questions.length * 2 - 1, (index) {
-                      if (index.isOdd) {
-                        // Separator with responsive spacing
-                        return SizedBox(height: questionSpacing);
-                      }
+    return Column(
+      children: [
+        // Content section with responsive breakpoints
+        Center(
+          child: Container(
+            constraints: BoxConstraints(maxWidth: contentMaxWidth),
+            child: Padding(
+              padding: contentPadding,
+              child: Column(
+                children: [
+                  // Questions list
+                  ...List.generate(_questions.length * 2 - 1, (index) {
+                    if (index.isOdd) {
+                      // Separator with responsive spacing
+                      return SizedBox(height: questionSpacing);
+                    }
 
-                      final questionIndex = index ~/ 2;
-                      final question = _questions[questionIndex];
+                    final questionIndex = index ~/ 2;
+                    final question = _questions[questionIndex];
 
-                      return _buildQuestionWidget(question);
-                    }),
+                    return _buildQuestionWidget(question);
+                  }),
 
-                    // Add spacing before submit button
-                    SizedBox(height: context.spacing.xl),
+                  // Add spacing before submit button
+                  SizedBox(height: context.spacing.xl),
 
-                    // Inline submit button - consistent with login page styling
-                    SizedBox(
-                      width: double.infinity,
-                      child: FilledButton(
-                        onPressed: _isSubmitting ? null : _handleSubmit,
-                        child: _isSubmitting
-                            ? SizedBox(
-                                width: 20,
-                                height: 20,
-                                child: CircularProgressIndicator(
-                                  strokeWidth: 2,
-                                  color: Theme.of(context).colorScheme.onPrimary,
-                                ),
-                              )
-                            : Text(_DynamicTemplateTexts.submit),
-                      ),
+                  // Inline submit button - consistent with login page styling
+                  SizedBox(
+                    width: double.infinity,
+                    child: FilledButton(
+                      onPressed: _isSubmitting ? null : _handleSubmit,
+                      child: _isSubmitting
+                          ? SizedBox(
+                              width: 20,
+                              height: 20,
+                              child: CircularProgressIndicator(
+                                strokeWidth: 2,
+                                color: Theme.of(context).colorScheme.onPrimary,
+                              ),
+                            )
+                          : Text(_DynamicTemplateTexts.submit),
                     ),
-                  ],
-                ),
+                  ),
+                ],
               ),
             ),
           ),
+        ),
 
-          // Add bottom spacing for system UI
-          SizedBox(height: _getBottomContentSpacing(context)),
-        ],
-      ),
+        // Add bottom spacing for system UI
+        SizedBox(height: _getBottomContentSpacing(context)),
+      ],
     );
   }
 
   // Responsive layout using Material 3 breakpoints
-  Widget _buildResponsiveLayout(BoxConstraints constraints) {
-    return CustomScrollView(
+  Widget _buildResponsiveLayout(Size screenSize) {
+    return SingleChildScrollView(
       controller: _scrollController,
       physics: const AlwaysScrollableScrollPhysics(
-        parent: BouncingScrollPhysics(),
+        parent: ClampingScrollPhysics(),
       ),
-      slivers: [
-        // Header that scrolls away with content
-        CollapsingHeader(
-          title: _templateData?['template_name'] ?? _DynamicTemplateTexts.checkin,
-          imageUrl: _templateData?['image_url'],
-        ),
+      keyboardDismissBehavior: ScrollViewKeyboardDismissBehavior.onDrag,
+      child: Column(
+        children: [
+          // Fixed header (no longer collapsing)
+          CollapsingHeader(
+            title: _templateData?['template_name'] ?? _DynamicTemplateTexts.checkin,
+            imageUrl: _templateData?['image_url'],
+          ),
 
-        // Scrollable content area
-        _buildSliverContent(constraints),
-      ],
+          // Main content
+          _buildContent(screenSize),
+        ],
+      ),
     );
   }
 
@@ -539,7 +568,14 @@ class _DynamicTemplatePageState extends State<DynamicTemplatePage> {
 
   // Bottom spacing for scrollable content
   double _getBottomContentSpacing(BuildContext context) {
-    return context.spacing.xxxl + MediaQuery.of(context).padding.bottom;
+    final baseSpacing = context.spacing.xxxl + MediaQuery.of(context).padding.bottom;
+
+    // Add keyboard-aware spacing for mobile web using safe padding
+    if (KeyboardUtils.isWeb && KeyboardUtils.isMobile) {
+      return baseSpacing + KeyboardUtils.getSafeBottomPadding();
+    }
+
+    return baseSpacing;
   }
 
 

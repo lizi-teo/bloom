@@ -1,0 +1,78 @@
+When my user uses firefox to browse the dynamic template, he tries to type something using the mobile keypad in the text field, this is what happens in the screenshot. .docs/prompts/20250923-debug-andriod/IMG_2068.PNG please view it and help me diagnose the problem
+
+Android View Issues Found:
+
+  ✅ Good Patterns (Already Fixed):
+
+  - DynamicTemplatePage: Recently fixed with proper mobile browser optimizations
+  - LoginScreen: Good responsive design with proper resizeToAvoidBottomInset: true
+  - SessionCreateScreen: Has mobile considerations with resizeToAvoidBottomInset: true
+
+  ⚠️ Potential Issues Identified:
+
+  1. DynamicResultsPage: Uses TickerProviderStateMixin and complex animations - could cause performance issues on Android
+  2. ShellScreen: Modal bottom sheets may not work well on Android browsers
+  3. ResponsiveLayoutWrapper: Uses basic responsive breakpoints but may need Android-specific adjustments
+  4. Various Screens: Inconsistent SafeArea usage across different pages
+
+  ---
+  🔍 DEBUGGING PROMPT FOR ANDROID VIEW ISSUES
+
+  I need you to comprehensively audit my Flutter web app for Android mobile browser compatibility issues. Please analyze page by page and each page's components for the following potential problems:
+
+  ## **CRITICAL ANDROID BROWSER ISSUES TO CHECK:**
+
+  ### **1. Viewport & Layout Issues**
+  - Missing or incorrect viewport meta tags in web/index.html
+  - SafeArea implementation inconsistencies across pages
+  - Content overflow or cut-off on Android Chrome/Firefox
+  - Improper handling of browser UI overlays (address bar, navigation)
+  - Hard-coded heights that don't account for Android browser variations
+
+  ### **2. Touch & Interaction Problems**
+  - Touch targets smaller than 44dp minimum
+  - Button/input field styling that doesn't work on Android browsers
+  - Modal sheets and overlays that don't position correctly
+  - Scroll behavior issues specific to Android webkit
+  - Keyboard overlap problems with input fields
+
+  ### **3. Performance & Animation Issues**
+  - Heavy animations using TickerProviderStateMixin that lag on Android
+  - Complex layout calculations in build methods
+  - Unnecessary rebuilds causing jank on mobile browsers
+  - Large widget trees causing memory issues
+
+  ### **4. Responsive Design Inconsistencies**
+  - Breakpoint logic that doesn't account for Android screen diversity
+  - Hardcoded padding/margins instead of responsive spacing
+  - Text scaling issues on different Android densities
+  - Images and assets not optimized for mobile bandwidth
+
+  ### **5. Browser-Specific Compatibility**
+  - CSS that doesn't work in Android Chrome/Firefox
+  - JavaScript/Dart features not supported in mobile browsers
+  - Network request handling differences on mobile
+  - Local storage or state management issues
+
+  ## **PAGES TO AUDIT:**
+  - Login Screen (/auth/screens/login_screen.dart)
+  - Shell Screen (/core/screens/shell_screen.dart)
+  - Session Create Screen (/sessions/screens/session_create_screen.dart)
+  - Dynamic Results Page (/results/dynamic_results_page.dart)
+  - Dynamic Template Page (/templates/dynamic_template_page.dart)
+  - ResponsiveLayoutWrapper (/components/molecules/responsive_layout_wrapper.dart)
+
+  ## **OUTPUT REQUIRED:**
+  1. **Issue Summary**: List all potential Android browser compatibility problems found
+  2. **Priority Ranking**: Rate issues as Critical/High/Medium/Low based on user impact
+  3. **Specific Code Locations**: File paths and line numbers for each issue
+  4. **Root Cause Analysis**: Explain why each issue occurs on Android browsers
+  5. **Fix Recommendations**: Specific code changes to resolve each issue
+  6. **Testing Strategy**: How to verify fixes work on Android browsers
+
+  ## **FOCUS AREAS:**
+  - Mobile-first responsive design principles
+  - Android Chrome and Firefox specific quirks
+  - Touch-friendly UI patterns
+  - Performance optimization for mobile browsers
+  - Consistent SafeArea and viewport handling

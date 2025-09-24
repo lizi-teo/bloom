@@ -124,14 +124,16 @@ extension SpacingThemeExtension on BuildContext {
   SpacingTheme get spacing => Theme.of(this).extension<SpacingTheme>() ?? SpacingTheme.defaultTheme;
 
   /// Standardized page edge padding based on screen size:
-  /// - Compact (mobile): 20px
+  /// - Compact (mobile): 20px (16px for budget Android)
   /// - Medium (tablet): 24px
   /// - Expanded (desktop): 32px
   EdgeInsets get pageEdgePadding {
     final screenSize = getScreenSize(this);
     switch (screenSize) {
       case ScreenSize.compact:
-        return EdgeInsets.all(spacing.lgPlus); // 20px
+        // Use smaller padding for budget Android devices (360dp width)
+        final isBudget = isLikelyBudgetAndroid(this);
+        return EdgeInsets.all(isBudget ? spacing.lg : spacing.lgPlus); // 16px or 20px
       case ScreenSize.medium:
         return EdgeInsets.all(spacing.xl); // 24px
       case ScreenSize.expanded:

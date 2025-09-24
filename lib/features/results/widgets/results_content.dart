@@ -172,7 +172,7 @@ class _ResultsContentState extends State<ResultsContent> {
               ),
               slivers: [
               // Collapsing header as first sliver
-              CollapsingHeader(
+              SliverCollapsingHeader(
                 title: _templateTitle ?? 'Results',
                 imageUrl: _templateImageUrl,
                 backgroundColor: Theme.of(context).colorScheme.surfaceContainer,

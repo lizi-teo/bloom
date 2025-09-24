@@ -15,6 +15,10 @@ class SessionCreateScreen extends StatelessWidget {
         centerTitle: false,
       ),
       body: SafeArea(
+        // Standard SafeArea for Android compatibility
+        minimum: EdgeInsets.only(
+          bottom: MediaQuery.of(context).padding.bottom,
+        ),
         child: LayoutBuilder(
           builder: (context, constraints) => _buildResponsiveLayout(constraints, context),
         ),

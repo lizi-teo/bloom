@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/foundation.dart' show kIsWeb;
 import '../../../features/sessions/models/question.dart';
 import '../../utils/responsive_utils.dart';
+import '../../utils/keyboard_utils.dart';
 import '../../themes/spacing_theme.dart';
 
 class TextFieldCard extends StatefulWidget {
@@ -68,8 +70,17 @@ class _TextFieldCardState extends State<TextFieldCard> {
 
     _focusNode.addListener(() {
       setState(() {
-        // Focus state changed
+        // Focus state changed - handle mobile keyboard issues
       });
+
+      // Enhanced mobile web keyboard fix for all browsers
+      if (kIsWeb && KeyboardUtils.isMobile && _focusNode.hasFocus) {
+        WidgetsBinding.instance.addPostFrameCallback((_) {
+          if (mounted) {
+            _ensureVisibleWithKeyboard();
+          }
+        });
+      }
     });
 
     _controller.addListener(() {
@@ -94,6 +105,31 @@ class _TextFieldCardState extends State<TextFieldCard> {
     _controller.dispose();
     _focusNode.dispose();
     super.dispose();
+  }
+
+
+  // Enhanced mobile web keyboard visibility fix for all browsers
+  void _ensureVisibleWithKeyboard() {
+    if (!context.mounted) return;
+
+    // Browser-specific delays to handle keyboard transitions
+    final delay = switch (KeyboardUtils.browserType) {
+      BrowserType.firefox => const Duration(milliseconds: 300), // Firefox needs longer delay
+      BrowserType.safari => const Duration(milliseconds: 200),   // Safari animation time
+      BrowserType.chrome => const Duration(milliseconds: 150),   // Chrome is fastest
+      _ => const Duration(milliseconds: 250),                   // Default safe delay
+    };
+
+    Future.delayed(delay, () {
+      if (mounted && _focusNode.hasFocus) {
+        Scrollable.ensureVisible(
+          context,
+          duration: const Duration(milliseconds: 200),
+          curve: Curves.easeInOut,
+          alignment: 0.4, // Position field slightly above center for better visibility
+        );
+      }
+    });
   }
 
   // Helper method for responsive title styling
@@ -135,7 +171,7 @@ class _TextFieldCardState extends State<TextFieldCard> {
     return Container(
       constraints: const BoxConstraints(
         minWidth: 240,
-        minHeight: 48,
+        minHeight: 44, // Android touch target minimum 44dp
       ),
       decoration: BoxDecoration(
         color: colorScheme.surfaceContainer,
@@ -165,7 +201,7 @@ class _TextFieldCardState extends State<TextFieldCard> {
           ),
           SizedBox(height: context.spacing.lgPlus), // 20dp spacing
 
-          // Material Design 3 TextField
+          // Material Design 3 TextField with Firefox mobile keyboard fixes
           TextField(
             controller: _controller,
             focusNode: _focusNode,
@@ -174,6 +210,22 @@ class _TextFieldCardState extends State<TextFieldCard> {
             maxLines: widget.maxLines,
             maxLength: widget.maxLength,
             onSubmitted: widget.onSubmitted,
+            // Enhanced mobile web keyboard handling
+            onTap: (kIsWeb && KeyboardUtils.isMobile) ? () {
+              // Ensure field is visible on mobile web when tapped
+              final tapDelay = switch (KeyboardUtils.browserType) {
+                BrowserType.firefox => const Duration(milliseconds: 500), // Firefox needs more time
+                BrowserType.safari => const Duration(milliseconds: 300),  // Safari medium delay
+                BrowserType.chrome => const Duration(milliseconds: 200),  // Chrome fastest response
+                _ => const Duration(milliseconds: 400),                   // Default safe delay
+              };
+
+              Future.delayed(tapDelay, () {
+                if (mounted) {
+                  _ensureVisibleWithKeyboard();
+                }
+              });
+            } : null,
             style: theme.textTheme.bodyLarge?.copyWith(
                   color: colorScheme.onSurface,
                 ),

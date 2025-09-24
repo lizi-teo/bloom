@@ -74,14 +74,21 @@ class ShellScreen extends StatelessWidget {
   void _showUserMenu(BuildContext context) {
     showModalBottomSheet(
       context: context,
+      isScrollControlled: true, // Allow proper keyboard handling
       builder: (BuildContext context) {
         return SafeArea(
+          // Enhanced SafeArea for Android navigation bars and keyboard
+          minimum: EdgeInsets.only(
+            bottom: MediaQuery.of(context).viewInsets.bottom +
+                    MediaQuery.of(context).padding.bottom,
+          ),
           child: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
               ListTile(
                 leading: const Icon(Icons.logout),
                 title: const Text('Sign Out'),
+                minTileHeight: 44, // Ensure Android touch target minimum
                 onTap: () async {
                   Navigator.of(context).pop();
                   final authService = AuthService();

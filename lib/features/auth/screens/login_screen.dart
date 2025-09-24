@@ -97,6 +97,10 @@ class _LoginScreenState extends State<LoginScreen> {
       backgroundColor: Theme.of(context).colorScheme.surface,
       resizeToAvoidBottomInset: true, // ✅ REQUIRED - Prevents keyboard from covering input fields
       body: SafeArea(
+        // Standard SafeArea for Android compatibility
+        minimum: EdgeInsets.only(
+          bottom: MediaQuery.of(context).padding.bottom,
+        ),
         child: LayoutBuilder(
           builder: (context, constraints) {
             return SingleChildScrollView(
