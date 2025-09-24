@@ -438,19 +438,8 @@ class _SimpleResultsCardState extends State<SimpleResultsCard> {
         ),
         SizedBox(height: context.spacing.lg),
 
-        // Show all responses (or first 5 if many)
-        ...responses.take(5).map((response) => _buildTextResponseItem(theme, response)),
-
-        if (responses.length > 5) ...[
-          SizedBox(height: context.spacing.sm),
-          Text(
-            '... and ${responses.length - 5} more response${responses.length - 5 == 1 ? '' : 's'}',
-            style: theme.textTheme.bodySmall?.copyWith(
-              color: colorScheme.onSurfaceVariant,
-              fontStyle: FontStyle.italic,
-            ),
-          ),
-        ],
+        // Show all responses
+        ...responses.map((response) => _buildTextResponseItem(theme, response)),
       ],
     );
   }

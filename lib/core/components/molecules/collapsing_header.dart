@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:http/http.dart' as http;
 import '../../utils/responsive_utils.dart';
 import '../../themes/spacing_theme.dart';
 import '../../services/image_cache_service.dart';
@@ -100,7 +101,7 @@ class CollapsingHeader extends StatelessWidget {
       width: iconSize,
       height: iconSize,
       decoration: BoxDecoration(
-        color: iconBackgroundColor ?? const Color(0xFFF8E503),
+        color: iconBackgroundColor ?? Theme.of(context).colorScheme.surfaceContainer,
         shape: BoxShape.circle,
       ),
       child: imageUrl != null
@@ -110,17 +111,19 @@ class CollapsingHeader extends StatelessWidget {
                 iconSize: iconSize,
               ),
             )
-          : _buildFallbackIcon(iconSize, context),
+          : Center(
+              child: SizedBox(
+                width: iconSize * 0.3,
+                height: iconSize * 0.3,
+                child: CircularProgressIndicator(
+                  strokeWidth: 2.0,
+                  color: Theme.of(context).colorScheme.primary,
+                ),
+              ),
+            ),
     );
   }
 
-  Widget _buildFallbackIcon(double iconSize, BuildContext context) {
-    return Icon(
-      Icons.favorite,
-      size: iconSize * 0.4,
-      color: Theme.of(context).colorScheme.primary,
-    );
-  }
 
   // Vertical padding only - no horizontal padding on container
   double _getVerticalPadding(ScreenSize screenSize, BuildContext context) {
@@ -189,7 +192,7 @@ class CollapsingHeader extends StatelessWidget {
   }
 }
 
-/// Custom image widget that checks cache immediately to prevent flash
+/// Industry-standard image widget with HTTP HEAD check for accurate fallback
 class _HeaderIconImage extends StatelessWidget {
   final String imageUrl;
   final double iconSize;
@@ -201,38 +204,53 @@ class _HeaderIconImage extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return FutureBuilder<CachedImage?>(
-      future: ImageCacheService().getImage(
-        imageUrl,
-        targetSize: Size(iconSize, iconSize),
-        fit: BoxFit.contain,
-      ),
+    return FutureBuilder<http.Response>(
+      future: http.head(Uri.parse(imageUrl)),
       builder: (context, snapshot) {
-        // If we have data (cached or newly loaded), show image immediately
-        if (snapshot.hasData && snapshot.data != null) {
-          return AnimatedSwitcher(
-            duration: const Duration(milliseconds: 200),
-            child: Image(
-              image: snapshot.data!.imageProvider,
-              width: iconSize,
-              height: iconSize,
-              fit: BoxFit.contain,
-              key: ValueKey(snapshot.data!.url),
+        // If HEAD request completed successfully, check status
+        if (snapshot.hasData) {
+          final statusCode = snapshot.data!.statusCode;
+
+          // Only show fallback for definitive "not found" responses from Supabase
+          if (statusCode == 404 || statusCode == 403) {
+            return Icon(
+              Icons.favorite,
+              size: iconSize * 0.4,
+              color: Theme.of(context).colorScheme.primary,
+            );
+          }
+
+          // For any other status (200, 500, etc.), attempt to load the actual image
+          return CachedNetworkImage(
+            imageUrl: imageUrl,
+            targetSize: Size(iconSize, iconSize),
+            fit: BoxFit.cover,
+            placeholder: Center(
+              child: SizedBox(
+                width: iconSize * 0.3,
+                height: iconSize * 0.3,
+                child: CircularProgressIndicator(
+                  strokeWidth: 2.0,
+                  color: Theme.of(context).colorScheme.primary,
+                ),
+              ),
             ),
+            errorWidget: Center(
+              child: SizedBox(
+                width: iconSize * 0.3,
+                height: iconSize * 0.3,
+                child: CircularProgressIndicator(
+                  strokeWidth: 2.0,
+                  color: Theme.of(context).colorScheme.primary,
+                ),
+              ),
+            ),
+            fadeInDuration: const Duration(milliseconds: 200),
           );
         }
 
-        // If there's an error, show fallback
-        if (snapshot.hasError || (snapshot.connectionState == ConnectionState.done && snapshot.data == null)) {
-          return Icon(
-            Icons.favorite,
-            size: iconSize * 0.4,
-            color: Theme.of(context).colorScheme.primary,
-          );
-        }
-
-        // Only show loading indicator if actually waiting for network
-        // For cached images, this should be skipped
+        // If HEAD request failed (network issues, timeouts), show loading
+        // This prevents showing fallback for temporary network problems
         return Center(
           child: SizedBox(
             width: iconSize * 0.3,

@@ -176,7 +176,6 @@ class _ResultsContentState extends State<ResultsContent> {
                 title: _templateTitle ?? 'Results',
                 imageUrl: _templateImageUrl,
                 backgroundColor: Theme.of(context).colorScheme.surfaceContainer,
-                iconBackgroundColor: const Color(0xFFF8E503),
               ),
               // Main content
               SliverToBoxAdapter(
