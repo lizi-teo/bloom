@@ -177,8 +177,6 @@ class _ResultsContentState extends State<ResultsContent> {
                 imageUrl: _templateImageUrl,
                 backgroundColor: Theme.of(context).colorScheme.surfaceContainer,
                 iconBackgroundColor: const Color(0xFFF8E503),
-                pinned: false,
-                floating: false,
               ),
               // Main content
               SliverToBoxAdapter(

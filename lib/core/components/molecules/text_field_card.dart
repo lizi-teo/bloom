@@ -185,25 +185,41 @@ class _TextFieldCardState extends State<TextFieldCard> {
               filled: true,
               fillColor: colorScheme.surface,
               border: OutlineInputBorder(
-                borderRadius: BorderRadius.circular(4.0),
+                borderRadius: BorderRadius.circular(8.0), // Increased for better mobile touch
                 borderSide: BorderSide(
                   color: colorScheme.outline,
                 ),
               ),
               enabledBorder: OutlineInputBorder(
-                borderRadius: BorderRadius.circular(4.0),
+                borderRadius: BorderRadius.circular(8.0),
                 borderSide: BorderSide(
                   color: colorScheme.outline,
                 ),
               ),
               focusedBorder: OutlineInputBorder(
-                borderRadius: BorderRadius.circular(4.0),
+                borderRadius: BorderRadius.circular(8.0),
                 borderSide: BorderSide(
                   color: colorScheme.primary,
                   width: 2.0,
                 ),
               ),
-              contentPadding: EdgeInsets.all(context.spacing.lg),
+              errorBorder: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(8.0),
+                borderSide: BorderSide(
+                  color: colorScheme.error,
+                ),
+              ),
+              focusedErrorBorder: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(8.0),
+                borderSide: BorderSide(
+                  color: colorScheme.error,
+                  width: 2.0,
+                ),
+              ),
+              contentPadding: EdgeInsets.symmetric(
+                horizontal: context.spacing.lg,
+                vertical: context.spacing.lgPlus, // Increased vertical padding for mobile
+              ),
               counterStyle: theme.textTheme.bodySmall?.copyWith(
                 color: colorScheme.onSurfaceVariant,
               ),

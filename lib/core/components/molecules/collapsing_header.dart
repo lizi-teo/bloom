@@ -2,20 +2,14 @@ import 'package:flutter/material.dart';
 import '../../utils/responsive_utils.dart';
 import '../../themes/spacing_theme.dart';
 
-/// A collapsing header component that uses SliverAppBar for scroll-based animations
-/// Based on Material Design 3 with responsive breakpoints
-/// Implements fade and scale animations as recommended by Material Design 3
+/// A simple fixed header component for mobile-first responsive design
+/// Replaces complex SliverAppBar with sustainable implementation
+/// Uses fixed heights for consistent mobile browser behavior
 class CollapsingHeader extends StatelessWidget {
   final String title;
   final String? imageUrl;
   final Color? backgroundColor;
   final Color? iconBackgroundColor;
-  final bool pinned;
-  final bool floating;
-  final bool snap;
-  final double? expandedHeight;
-  final double stretchTriggerOffset;
-  final bool stretch;
 
   const CollapsingHeader({
     super.key,
@@ -23,61 +17,28 @@ class CollapsingHeader extends StatelessWidget {
     this.imageUrl,
     this.backgroundColor,
     this.iconBackgroundColor,
-    this.pinned = false,
-    this.floating = false,
-    this.snap = false,
-    this.expandedHeight,
-    this.stretchTriggerOffset = 100.0,
-    this.stretch = true,
   });
 
   @override
   Widget build(BuildContext context) {
     final screenSize = getScreenSize(context);
-    final calculatedHeight = expandedHeight ?? _getHeaderHeight(screenSize, context);
+    final headerHeight = _getHeaderHeight(screenSize, context);
 
-    return SliverAppBar(
-      expandedHeight: calculatedHeight,
-      backgroundColor: backgroundColor ?? Theme.of(context).colorScheme.surfaceContainer,
-      pinned: pinned,
-      floating: floating,
-      snap: snap,
-      stretch: stretch,
-      stretchTriggerOffset: stretchTriggerOffset,
-      automaticallyImplyLeading: false, // Remove back button
-      surfaceTintColor: Colors.transparent, // Remove Material 3 tint
-      scrolledUnderElevation: 0, // No elevation as requested
-      toolbarHeight: 0, // Hide collapsed toolbar to prevent height conflicts
-      flexibleSpace: LayoutBuilder(
-        builder: (context, constraints) {
-          // Simplified animation progress (0.0 = collapsed, 1.0 = expanded)
-          final double expandRatio = constraints.maxHeight > 0
-              ? (constraints.maxHeight / calculatedHeight).clamp(0.0, 1.0)
-              : 0.0;
-
-          // Simple fade animation without curves to improve performance
-          final double fadeOpacity = expandRatio;
-
-          return FlexibleSpaceBar(
-            centerTitle: false,
-            expandedTitleScale: 1.0,
-            collapseMode: CollapseMode.parallax,
-            stretchModes: const [
-              StretchMode.zoomBackground,
-              StretchMode.fadeTitle,
-            ],
-            background: Opacity(
-              opacity: fadeOpacity,
-              child: Padding(
-                padding: EdgeInsets.symmetric(
-                  horizontal: _getHeaderHorizontalPadding(screenSize, context),
-                  vertical: _getHeaderVerticalPadding(screenSize, context),
-                ),
-                child: _buildHeaderContent(screenSize, Theme.of(context), context),
-              ),
+    return SliverToBoxAdapter(
+      child: Container(
+        height: headerHeight,
+        decoration: BoxDecoration(
+          color: backgroundColor ?? Theme.of(context).colorScheme.surfaceContainer,
+        ),
+        child: SafeArea(
+          child: Padding(
+            padding: EdgeInsets.symmetric(
+              horizontal: _getHeaderHorizontalPadding(screenSize, context),
+              vertical: _getHeaderVerticalPadding(screenSize, context),
             ),
-          );
-        },
+            child: _buildHeaderContent(screenSize, Theme.of(context), context),
+          ),
+        ),
       ),
     );
   }
@@ -175,14 +136,14 @@ class CollapsingHeader extends StatelessWidget {
     );
   }
 
-  // Responsive sizing helper methods with proper height calculation
+  // Content-based header heights for proper sizing
   double _getHeaderHeight(ScreenSize screenSize, BuildContext context) {
     final iconSize = _getHeaderIconSize(screenSize);
-    final verticalPadding = _getHeaderVerticalPadding(screenSize, context);
+    final verticalPadding = _getHeaderVerticalPadding(screenSize, context) * 2; // Top + bottom
     final iconTextSpacing = screenSize != ScreenSize.expanded ? _getIconTextSpacing(screenSize, context) : 0;
-    final textHeight = screenSize != ScreenSize.expanded ? context.spacing.xxxl : context.spacing.xxl; // Theme-based text height
+    final estimatedTextHeight = 40.0; // Conservative estimate for title text
 
-    return verticalPadding + iconSize + iconTextSpacing + textHeight + context.spacing.sm; // Theme-based bottom spacing
+    return iconSize + iconTextSpacing + estimatedTextHeight + verticalPadding;
   }
 
   // Responsive padding using ScreenSize enum pattern (organisms guide)

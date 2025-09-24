@@ -17,9 +17,7 @@ class _DynamicTemplateTexts {
   static const String checkin = 'Check-in';
   static const String submitting = 'Submitting...';
   static const String submit = 'Submit';
-  static const String submittingFeedback = 'Submitting feedback';
   static const String errorIcon = 'Error';
-  static const String submitButton = 'Submit feedback';
   static const String submissionCompleted = 'completed successfully!';
   static const String failedToSubmitFeedback = 'Failed to submit feedback';
   static const String errorLoadingSession = 'Error loading session';
@@ -158,7 +156,7 @@ class DynamicTemplatePage extends StatefulWidget {
   State<DynamicTemplatePage> createState() => _DynamicTemplatePageState();
 }
 
-class _DynamicTemplatePageState extends State<DynamicTemplatePage> with TickerProviderStateMixin {
+class _DynamicTemplatePageState extends State<DynamicTemplatePage> {
   final _supabase = Supabase.instance.client;
   final _scrollController = ScrollController();
 
@@ -168,51 +166,19 @@ class _DynamicTemplatePageState extends State<DynamicTemplatePage> with TickerPr
   List<Map<String, dynamic>> _questions = [];
   final Map<int, dynamic> _answers = {}; // Changed to dynamic to handle different answer types
 
-  late AnimationController _buttonAnimationController;
-  late Animation<double> _buttonAnimation;
-  bool _showFloatingButton = false;
 
   @override
   void initState() {
     super.initState();
     _loadTemplateData();
-
-    // Initialize animation controller for floating button
-    _buttonAnimationController = AnimationController(duration: const Duration(milliseconds: 300), vsync: this);
-
-    _buttonAnimation = CurvedAnimation(parent: _buttonAnimationController, curve: Curves.easeInOut);
-
-    // Add scroll listener
-    _scrollController.addListener(_onScroll);
   }
 
   @override
   void dispose() {
     _scrollController.dispose();
-    _buttonAnimationController.dispose();
     super.dispose();
   }
 
-  void _onScroll() {
-    final scrollOffset = _scrollController.offset;
-    final maxScroll = _scrollController.position.maxScrollExtent;
-    final scrollRatio = maxScroll > 0 ? scrollOffset / maxScroll : 0;
-
-    // Show button when scrolled halfway down
-    final shouldShow = scrollRatio >= 0.5;
-
-    if (shouldShow != _showFloatingButton) {
-      setState(() {
-        _showFloatingButton = shouldShow;
-      });
-
-      if (shouldShow) {
-        _buttonAnimationController.forward();
-      } else {
-        _buttonAnimationController.reverse();
-      }
-    }
-  }
 
   Future<void> _loadTemplateData() async {
     try {
@@ -415,53 +381,12 @@ class _DynamicTemplatePageState extends State<DynamicTemplatePage> with TickerPr
       resizeToAvoidBottomInset: true,
       backgroundColor: colorScheme.surface,
       body: SafeArea(
+        // Ensure SafeArea handles all mobile browser UI elements
+        minimum: EdgeInsets.only(
+          bottom: MediaQuery.of(context).viewInsets.bottom,
+        ),
         child: LayoutBuilder(
           builder: (context, constraints) => _buildResponsiveLayout(constraints),
-        ),
-      ),
-      floatingActionButton: Padding(
-        padding: EdgeInsets.only(
-          bottom: MediaQuery.of(context).viewInsets.bottom + MediaQuery.of(context).padding.bottom,
-        ),
-        child: AnimatedBuilder(
-          animation: _buttonAnimation,
-          builder: (context, child) {
-            return Transform.scale(
-              scale: _buttonAnimation.value,
-              child: Opacity(
-                opacity: _buttonAnimation.value,
-                child: FilledButton.icon(
-                  onPressed: (_showFloatingButton && !_isSubmitting) ? _handleSubmit : null,
-                  style: FilledButton.styleFrom(
-                    backgroundColor: _isSubmitting 
-                        ? colorScheme.primary.withValues(alpha: 0.6) 
-                        : null, // Let theme handle default color
-                    elevation: 8,
-                    shadowColor: colorScheme.shadow,
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(100),
-                    ),
-                    padding: _getFloatingButtonPadding(context),
-                  ),
-                  icon: _isSubmitting 
-                      ? SizedBox(
-                          width: 20, 
-                          height: 20, 
-                          child: CircularProgressIndicator(
-                            strokeWidth: 2, 
-                            color: colorScheme.onPrimary,
-                            semanticsLabel: _DynamicTemplateTexts.submittingFeedback,
-                          )
-                        ) 
-                      : const Icon(Icons.check, size: 20),
-                  label: Text(
-                    _isSubmitting ? _DynamicTemplateTexts.submitting : _DynamicTemplateTexts.submit,
-                    semanticsLabel: _DynamicTemplateTexts.submitButton,
-                  ),
-                ),
-              ),
-            );
-          },
         ),
       ),
     );
@@ -537,13 +462,34 @@ class _DynamicTemplatePageState extends State<DynamicTemplatePage> with TickerPr
 
                       return _buildQuestionWidget(question);
                     }),
+
+                    // Add spacing before submit button
+                    SizedBox(height: context.spacing.xl),
+
+                    // Inline submit button - consistent with login page styling
+                    SizedBox(
+                      width: double.infinity,
+                      child: FilledButton(
+                        onPressed: _isSubmitting ? null : _handleSubmit,
+                        child: _isSubmitting
+                            ? SizedBox(
+                                width: 20,
+                                height: 20,
+                                child: CircularProgressIndicator(
+                                  strokeWidth: 2,
+                                  color: Theme.of(context).colorScheme.onPrimary,
+                                ),
+                              )
+                            : Text(_DynamicTemplateTexts.submit),
+                      ),
+                    ),
                   ],
                 ),
               ),
             ),
           ),
-          
-          // Add extra spacing at bottom for floating button and system UI
+
+          // Add bottom spacing for system UI
           SizedBox(height: _getBottomContentSpacing(context)),
         ],
       ),
@@ -590,13 +536,6 @@ class _DynamicTemplatePageState extends State<DynamicTemplatePage> with TickerPr
     }
   }
 
-  // Floating button padding helper
-  EdgeInsets _getFloatingButtonPadding(BuildContext context) {
-    return EdgeInsets.symmetric(
-      horizontal: context.spacing.lg + context.spacing.xs,
-      vertical: context.spacing.lg,
-    );
-  }
 
   // Bottom spacing for scrollable content
   double _getBottomContentSpacing(BuildContext context) {

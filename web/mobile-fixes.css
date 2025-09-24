@@ -1,0 +1,91 @@
+/* Mobile-specific CSS fixes for Android browsers */
+
+/* Prevent zoom on input focus */
+input[type="text"],
+input[type="email"],
+input[type="password"],
+textarea,
+select {
+  font-size: 16px !important;
+  -webkit-appearance: none;
+  -moz-appearance: none;
+  appearance: none;
+}
+
+/* Fix viewport height issues on mobile browsers */
+html, body {
+  width: 100%;
+  height: 100%;
+  overflow-x: hidden;
+  -webkit-overflow-scrolling: touch;
+  position: relative;
+}
+
+/* Prevent horizontal scrolling */
+* {
+  max-width: 100%;
+  box-sizing: border-box;
+}
+
+/* Android Chrome specific fixes */
+@media screen and (-webkit-min-device-pixel-ratio: 0) {
+  /* Fix for Android Chrome input styling */
+  input, textarea {
+    -webkit-appearance: none;
+    -webkit-border-radius: 0;
+    border-radius: 8px;
+  }
+
+  /* Fix for Android Chrome button styling */
+  button {
+    -webkit-appearance: none;
+    -webkit-border-radius: 0;
+  }
+}
+
+/* Firefox Android specific fixes */
+@-moz-document url-prefix() {
+  /* Fix for Firefox Android input styling */
+  input, textarea {
+    -moz-appearance: none;
+  }
+}
+
+/* Improve touch targets for mobile */
+button, input, select, textarea {
+  min-height: 44px;
+  min-width: 44px;
+}
+
+/* Fix for sticky elements on mobile */
+.sticky-element {
+  position: -webkit-sticky;
+  position: sticky;
+}
+
+/* Prevent text selection on touch devices for better UX */
+.no-select {
+  -webkit-touch-callout: none;
+  -webkit-user-select: none;
+  -khtml-user-select: none;
+  -moz-user-select: none;
+  -ms-user-select: none;
+  user-select: none;
+}
+
+/* Improve scrolling performance */
+.scroll-container {
+  -webkit-overflow-scrolling: touch;
+  overflow-scrolling: touch;
+}
+
+/* Fix for Safari mobile address bar height changes */
+.full-height {
+  height: 100vh;
+  height: -webkit-fill-available;
+}
+
+/* Android keyboard fix */
+.keyboard-fix {
+  padding-bottom: env(keyboard-inset-height, 0px);
+}
